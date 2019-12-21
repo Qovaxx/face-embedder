@@ -1,9 +1,0 @@
-FROM alpine:3.7
-MAINTAINER "mikhail.chernyshev@x5.ru"
-
-ENV BUILD_DATE ${BUILD_DATE}
-ENV SOURCE ${SOURCE}
-ENV BRANCH ${BRANCH}
-ENV VCS_REF ${VCS_REF}
-
-#WORKDIR /face-embedder
