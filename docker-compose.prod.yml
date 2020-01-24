@@ -1,0 +1,10 @@
+version: '2.4'
+
+services:
+  faceembedder:
+    build:
+      target: production
+    image: ${IMAGE_NAME}-prod
+    container_name: ${CONTAINER_NAME}-prod
+    environment:
+      - APP_ENV=production

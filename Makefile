@@ -1,21 +1,14 @@
-# Docker building settings
-IMAGE_NAME=qovaxx/face-embedder
-CONTAINER_NAME=face-embedder
+# Git settings
+GIT_PROJECT_URL=https://gitlab.x5.ru/computer-vision/face-embedder
+GIT_WORKING_BRANCH=feature/initial-changes
 
-TARGET="dev"
-CONTAINER_PROJECT_DIRPATH=/project
-BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%S%:z")
-SOURCE=$(shell git config --get remote.origin.url)
-BRANCH=$(shell git symbolic-ref -q --short HEAD)
-VCS_REF=$(shell git rev-parse HEAD)
-DOCKER_USER_NAME="root"
-DOCKER_USER_PASS="pass"
-DOCKER_SSH_PORT=22
-HOST_SSH_PORT=9990
 
-# Port forwarding settings
-REMOTE_SSH_USER="qovaxx"
-LOCAL_PORT=9990
+# There must be no space between the function name and the input argument
+# Example: $(call env_arg,NAME))
+#                        ^
+define env_arg
+	$(shell grep -oP '^$(1)=\K.*' .env)
+endef
 
 # Help
 .PHONY: help
@@ -23,46 +16,45 @@ LOCAL_PORT=9990
 help: ## This help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build:  ## Build the container
-	DOCKER_BUILDKIT=1 nvidia-docker build \
-	--tag ${IMAGE_NAME} \
-	--file ./docker/Dockerfile \
-	--target ${TARGET} \
-	--build-arg BUILD_DATE=${BUILD_DATE} \
-	--build-arg SOURCE=${SOURCE} \
-	--build-arg BRANCH=${BRANCH} \
-	--build-arg VCS_REF=${VCS_REF} \
-	--build-arg PROJECT_DIRPATH=${CONTAINER_PROJECT_DIRPATH} \
-	--build-arg DOCKER_USER_NAME=${DOCKER_USER_NAME} \
-	--build-arg DOCKER_USER_PASS=${DOCKER_USER_PASS} \
-	--build-arg DOCKER_SSH_PORT=${DOCKER_SSH_PORT} \
-	.
+git-server-init: ## Initializing the repository to use the git metadata in the docker
+	git init
+	git remote add origin ${GIT_PROJECT_URL}
+	git fetch origin
+	git checkout -f ${GIT_WORKING_BRANCH}
 
-run-dl1: ## Run container in dl1
-	nvidia-docker run \
-		-itd \
-		--name=${CONTAINER_NAME} \
-		--ipc=host \
-		-e DISPLAY=unix${DISPLAY} \
-		-v /tmp/.X11-unix:/tmp/.X11-unix --privileged \
-		-v $(shell pwd):${CONTAINER_PROJECT_DIRPATH} \
-		-p ${HOST_SSH_PORT}:${DOCKER_SSH_PORT} \
-		${IMAGE_NAME}
+
+build: ## Build container
+	bash ./scripts/docker-compose.sh build-$(target)
+
+up: ## Run container in dl1
+	bash ./scripts/docker-compose.sh up-$(target) faceembedder
+
+down: ## Stop and remove a running container
+	bash ./scripts/docker-compose.sh down-$(target)
 
 exec: ## Run a bash in a running container
-	nvidia-docker exec -it ${CONTAINER_NAME} bash
+	$(eval CONTAINER_NAME=$(call env_arg,CONTAINER_NAME))
+	nvidia-docker exec -it ${CONTAINER_NAME}-$(target) bash
 
-stop-rm: ## Stop and remove a running container
-	docker stop ${CONTAINER_NAME}; docker rm ${CONTAINER_NAME}
+compile-requirements:
+	pip-compile ./requirements/prod-requirements.in
+	pip-compile ./requirements/dev-requirements.in
 
+dl1-port-forwarding: ## Up and down a direct tunnel to the dl1 docker container
+	$(eval NAME=$(call env_arg,NAME))
+	$(eval LOCAL_ADDR=$(call env_arg,LOCAL_ADDR))
+	$(eval LOCAL_PORT=$(call env_arg,LOCAL_PORT))
+	$(eval REMOTE_ADDR=$(call env_arg,REMOTE_ADDR))
+	$(eval HOST_SSH_PORT=$(call env_arg,HOST_SSH_PORT))
+	$(eval REMOTE_SSH=$(call env_arg,REMOTE_SSH))
+	$(eval SSH_USER=$(call env_arg,SSH_USER))
 
-
-up-dl1-docker-tunnel: ## Up a direct tunnel to the ssh port in the dl1 docker container
-	bash port_forwarding.sh --name=dl1-docker-forwarding \
-	--local-addr=localhost --local-port=${LOCAL_PORT} --remote-addr=localhost --remote-port=${HOST_SSH_PORT} \
-	--remote-ssh=dl1 --ssh-user=${REMOTE_SSH_USER} --command=start
-
-down-dl1-docker-tunnel: ## Shut down a direct tunnel to the dl1 docker
-	bash port_forwarding.sh --name=dl1-docker-forwarding \
-	 --local-addr=localhost --local-port=${LOCAL_PORT} --remote-addr=localhost --remote-port=${HOST_SSH_PORT} \
-	 --remote-ssh=dl1 --ssh-user=${REMOTE_SSH_USER} --command=stop
+	bash ./scripts/port_forwarding.sh \
+	 	--name=${NAME} \
+	 	--local-addr=${LOCAL_ADDR} \
+	 	--local-port=${LOCAL_PORT} \
+	 	--remote-addr=${REMOTE_ADDR} \
+	 	--remote-port=${HOST_SSH_PORT} \
+	 	--remote-ssh=${REMOTE_SSH} \
+	 	--ssh-user=${SSH_USER} \
+	 	--command=$(command)

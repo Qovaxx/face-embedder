@@ -24,24 +24,22 @@ RUN apt-get update && apt-get install -y \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-## Install nvidia apex
-#RUN git clone https://github.com/NVIDIA/apex && \
-#    cd apex && \
-#    pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./ && \
-#    cd ..
+# Install nvidia apex
+RUN git clone https://github.com/NVIDIA/apex && \
+    cd apex && \
+    pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./ && \
+    cd ..
 
 # Install python libs
 RUN pip install --no-cache-dir --upgrade pip
 RUN mkdir /server
-COPY ./requirements.txt /server/requirements.txt
-RUN pip install --no-cache-dir -r /server/requirements.txt
 
 
 # === PROJECT INFO SETTINGS ===
-ARG BUILD_DATE=None
-ARG SOURCE=None
-ARG BRANCH=None
-ARG VCS_REF=None
+ARG BUILD_DATE
+ARG SOURCE
+ARG BRANCH
+ARG VCS_REF
 
 ENV BUILD_DATE ${BUILD_DATE}
 ENV SOURCE ${SOURCE}
@@ -49,35 +47,37 @@ ENV BRANCH ${BRANCH}
 ENV VCS_REF ${VCS_REF}
 # === PROJECT INFO SETTINGS ===
 
-
-ARG PROJECT_DIRPATH="/project"
+ARG PROJECT_DIRPATH
 ENV PROJECT_DIRPATH ${PROJECT_DIRPATH}
 ENV PYTHONPATH "${PYTHONPATH}:${PROJECT_DIRPATH}"
-
 WORKDIR ${PROJECT_DIRPATH}
 
-# Dev target
-FROM base as dev
 
-ARG DOCKER_USER_NAME="root"
-ARG DOCKER_USER_PASS="pass"
-ARG DOCKER_SSH_PORT=22
-ENV APP_ENV="development"
+
+# DEVELOPMENT
+FROM base as development
+COPY ./requirements/dev-requirements.txt /server/dev-requirements.txt
+RUN pip install --no-cache-dir -r /server/dev-requirements.txt
 
 # SSH settings
+ARG DOCKER_USER_NAME
+ARG DOCKER_USER_PASS
+ARG DOCKER_SSH_PORT
+RUN echo "${DOCKER_USER_NAME}:${DOCKER_USER_PASS}" | chpasswd
 RUN apt-get update && \
     apt-get install -y openssh-server && \
     mkdir /var/run/sshd && \
     echo "${DOCKER_USER_NAME}:${DOCKER_USER_PASS}" | chpasswd && \
     sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/" /etc/ssh/sshd_config && \
     sed "s@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g" -i /etc/pam.d/sshd
-
 EXPOSE ${DOCKER_SSH_PORT}
 CMD ["/usr/sbin/sshd", "-D"]
 
-# Prod target
-FROM base as prod
 
-ENV APP_ENV="production"
-# TODO: COPY project instead mounting
-# TODO: CMD create entrypoint to workflow
+
+# PRODUCTION
+FROM base as production
+COPY . ${PROJECT_DIRPATH}
+
+COPY ./requirements/prod-requirements.txt /server/prod-requirements.txt
+RUN pip install --no-cache-dir -r /server/prod-requirements.txt
