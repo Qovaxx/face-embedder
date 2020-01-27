@@ -22,7 +22,6 @@ git-server-init: ## Initializing the repository to use the git metadata in the d
 	git fetch origin
 	git checkout -f ${GIT_WORKING_BRANCH}
 
-
 build: ## Build container
 	bash ./scripts/docker-compose.sh build-$(target)
 
@@ -36,18 +35,18 @@ exec: ## Run a bash in a running container
 	$(eval CONTAINER_NAME=$(call env_arg,CONTAINER_NAME))
 	nvidia-docker exec -it ${CONTAINER_NAME}-$(target) bash
 
-compile-requirements:
+compile-requirements: ## compile dev and prod requirements.txt
 	pip-compile ./requirements/prod-requirements.in
 	pip-compile ./requirements/dev-requirements.in
 
-dl1-port-forwarding: ## Up and down a direct tunnel to the dl1 docker container
-	$(eval NAME=$(call env_arg,NAME))
-	$(eval LOCAL_ADDR=$(call env_arg,LOCAL_ADDR))
-	$(eval LOCAL_PORT=$(call env_arg,LOCAL_PORT))
-	$(eval REMOTE_ADDR=$(call env_arg,REMOTE_ADDR))
+port-forwarding-to: ## Up and down a direct tunnel to the docker container
+	$(eval NAME=$(call env_arg,$(server)PW_NAME))
+	$(eval LOCAL_ADDR=$(call env_arg,$(server)PW_LOCAL_ADDR))
+	$(eval LOCAL_PORT=$(call env_arg,$(server)PW_LOCAL_PORT))
+	$(eval REMOTE_ADDR=$(call env_arg,$(server)PW_REMOTE_ADDR))
 	$(eval HOST_SSH_PORT=$(call env_arg,HOST_SSH_PORT))
-	$(eval REMOTE_SSH=$(call env_arg,REMOTE_SSH))
-	$(eval SSH_USER=$(call env_arg,SSH_USER))
+	$(eval REMOTE_SSH=$(call env_arg,$(server)PW_REMOTE_SSH))
+	$(eval SSH_USER=$(call env_arg,$(server)PW_SSH_USER))
 
 	bash ./scripts/port_forwarding.sh \
 	 	--name=${NAME} \
@@ -58,3 +57,8 @@ dl1-port-forwarding: ## Up and down a direct tunnel to the dl1 docker container
 	 	--remote-ssh=${REMOTE_SSH} \
 	 	--ssh-user=${SSH_USER} \
 	 	--command=$(command)
+
+assign-datadir: ## Assign face_datasets directory to data directory as symlink
+	rm ./data
+	$(eval DATASETS_DIRPATH=$(call env_arg,$(server)_DATASETS_DIRPATH))
+	ln -s ${DATASETS_DIRPATH} ./data
