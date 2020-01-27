@@ -24,16 +24,9 @@ RUN apt-get update && apt-get install -y \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install nvidia apex
-RUN git clone https://github.com/NVIDIA/apex && \
-    cd apex && \
-    pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./ && \
-    cd ..
-
 # Install python libs
 RUN pip install --no-cache-dir --upgrade pip
 RUN mkdir /server
-
 
 # === PROJECT INFO SETTINGS ===
 ARG BUILD_DATE
@@ -59,6 +52,13 @@ FROM base as development
 COPY ./requirements/dev-requirements.txt /server/dev-requirements.txt
 RUN pip install --no-cache-dir -r /server/dev-requirements.txt
 
+# TODO: move apex to requirements.txt
+# Install nvidia apex
+RUN git clone https://github.com/NVIDIA/apex && \
+    cd apex && \
+    pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./ && \
+    cd ..
+
 # SSH settings
 ARG DOCKER_USER_NAME
 ARG DOCKER_USER_PASS
@@ -74,10 +74,17 @@ EXPOSE ${DOCKER_SSH_PORT}
 CMD ["/usr/sbin/sshd", "-D"]
 
 
+## PRODUCTION
+#FROM base as production
+#COPY . ${PROJECT_DIRPATH}
+#
+#COPY ./requirements/prod-requirements.txt /server/prod-requirements.txt
+#RUN pip install --no-cache-dir -r /server/prod-requirements.txt
+#
 
-# PRODUCTION
-FROM base as production
-COPY . ${PROJECT_DIRPATH}
-
-COPY ./requirements/prod-requirements.txt /server/prod-requirements.txt
-RUN pip install --no-cache-dir -r /server/prod-requirements.txt
+# TODO: move apex to requirements.txt
+## Install nvidia apex
+#RUN git clone https://github.com/NVIDIA/apex && \
+#    cd apex && \
+#    pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./ && \
+#    cd ..
