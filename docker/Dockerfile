@@ -16,10 +16,17 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1 &&
     update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
 
 # Install other stuff
+# libopenblas-base: mxnet
+# libsm6, libxext6, libxrender-dev: opencv
+# libturbojpeg: jpegturbo
 RUN apt-get update && apt-get install -y \
+    curl \
     git \
     wget \
-    curl \
+    libopenblas-base \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
     libturbojpeg && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

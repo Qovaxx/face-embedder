@@ -7,6 +7,29 @@
 #
 # based on https://unix.stackexchange.com/questions/100859/ssh-tunnel-without-shell-on-ssh-server
 #set -x
+
+# Example usage:
+# ./port_forwarding.sh \
+#   --name=dl1-docker-forwarding \
+#   --local-addr=localhost \
+#   --local-port=8991 \
+#   --remote-addr=localhost \
+#   --remote-port=9991 \
+#   --remote-ssh=dl1 \
+#   --ssh-user=n01z3 \
+#   --command=start
+#
+# ./port_forwarding.sh \
+#   --n=dl2-docker-forwarding \
+#   -la=localhost \
+#   -lp=8992 \
+#   -ra=localhost \
+#   -rp=9992 \
+#   -rs=dl2 \
+#   -su=n01z3 \
+#   -c=stop
+
+
 set -e
 
 # Args parsing
