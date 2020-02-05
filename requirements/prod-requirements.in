@@ -1,6 +1,8 @@
--e git+https://github.com/amirassov/ppln.git@master#egg=ppln
+git+https://github.com/amirassov/ppln.git@v0.3.0#egg=ppln
+bcolz
 torch
 torchvision
+typing-extensions
 albumentations
 click
 numpy

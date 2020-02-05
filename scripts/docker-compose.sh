@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+# Example usage:
+#  base:
+#   ./docker-compose.sh build-dev
+#   ./docker-compose.sh up-dev DL1 faceembedder
+#   ./docker-compose.sh down-dev DL1
+#  extended options:
+#   ./docker-compose.sh build-dev --parallel --force-rm
+#   ./docker-compose.sh up-dev DL1 faceembedder --no-color --build
+#   ./docker-compose.sh down-dev DL1 -v --rmi
+
+
 # If necessary run "make git-server-init" in the project root directory
 BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%S%:z")
 SOURCE=$(git config --get remote.origin.url)
@@ -7,7 +18,8 @@ BRANCH=$(git symbolic-ref -q --short HEAD)
 VCS_REF=$(git rev-parse HEAD)
 
 COMMAND=$1
-PARAMS="${@:2}"
+SERVER=$2
+PARAMS="${@:3}"
 case ${COMMAND} in
     build-dev)
         docker-compose -f docker-compose.yml -f docker-compose.dev.yml build \
@@ -26,16 +38,24 @@ case ${COMMAND} in
             ${PARAMS}
         ;;
     up-dev)
-        docker-compose --project-name dev -f docker-compose.yml -f docker-compose.dev.yml up -d ${PARAMS}
+         docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.${SERVER,,}.yml \
+            --project-name dev \
+            up -d ${PARAMS}
         ;;
     up-prod)
-        docker-compose --project-name prod -f docker-compose.yml -f docker-compose.prod.yml up -d ${PARAMS}
+        docker-compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.${SERVER,,}.yml \
+            --project-name prod \
+            up -d ${PARAMS}
         ;;
     down-dev)
-        docker-compose --project-name dev -f docker-compose.yml -f docker-compose.dev.yml down ${PARAMS}
+        docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.${SERVER,,}.yml \
+            --project-name dev \
+            down ${PARAMS}
         ;;
     down-prod)
-        docker-compose --project-name prod -f docker-compose.yml -f docker-compose.prod.yml down ${PARAMS}
+        docker-compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.${SERVER,,}.yml \
+            --project-name prod \
+            down ${PARAMS}
         ;;
     *)
         echo $"Usage: $0 {build-dev|up-dev|down-dev}"
