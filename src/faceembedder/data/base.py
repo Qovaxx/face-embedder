@@ -3,18 +3,24 @@ from abc import (
 	abstractmethod,
 )
 import pickle
+import os
 import os.path as osp
 from typing import (
 	Any,
 	NoReturn,
 	Optional,
 	List,
-	ClassVar
+	Tuple,
+	ClassVar,
 )
 
 from .records import (
 	ClassificationRecord,
 	VerificationRecord
+)
+from .registry import (
+	READERS_REGISTRY,
+	WRITERS_REGISTRY
 )
 from .mixins import PathMixin
 
@@ -22,6 +28,7 @@ from .mixins import PathMixin
 class BaseWriter(ABC, PathMixin):
 
 	def __init__(self, path: str) -> NoReturn:
+		os.makedirs(path, exist_ok=True)
 		self._path = path
 		self._pairs = list()
 
@@ -49,7 +56,10 @@ class BaseWriter(ABC, PathMixin):
 class BaseReader(ABC, PathMixin):
 
 	def __init__(self, path: str) -> NoReturn:
+		assert osp.exists(path) and len(os.listdir(path)) > 0, "The reading folder ьгые exist and mustn't be empty"
 		self._path = path
+		self._attributes = list()
+
 		if osp.exists(self.pairs_path):
 			self._pairs = self._load_pickle(self.pairs_path)
 		else:
@@ -58,6 +68,10 @@ class BaseReader(ABC, PathMixin):
 	@property
 	def path(self) -> str:
 		return self._path
+
+	@property
+	def attributes(self) -> List[Tuple]:
+		return self._attributes
 
 	@property
 	def pairs(self) -> Optional[List[VerificationRecord]]:
@@ -75,19 +89,25 @@ class BaseReader(ABC, PathMixin):
 
 	@property
 	@abstractmethod
-	def photos(self) -> int:
+	def num_images(self) -> int:
 		...
 
 	@property
 	@abstractmethod
-	def identities(self) -> int:
+	def num_classes(self) -> int:
 		...
 
 
 class BaseConverter(ABC):
 
-	def __init__(self, writer: BaseWriter, verbose: bool = False) -> NoReturn:
-		self._writer = writer
+	def __init__(self, src_path, dst_path: str, writer: str = "FolderWriter",
+	             verbose: bool = False) -> NoReturn:
+		valid_writers: List[str] = list(WRITERS_REGISTRY.register.keys())
+		assert writer in valid_writers, f"Available writers are: {valid_writers}"
+
+		self._src_path = src_path
+		self._dst_path = dst_path
+		self._writer = WRITERS_REGISTRY.get(writer)(path=dst_path)
 		self._verbose = verbose
 
 	@property
@@ -95,33 +115,48 @@ class BaseConverter(ABC):
 		return self._writer
 
 	@abstractmethod
-	def execute_from(self, path: str) -> NoReturn:
+	def execute(self) -> NoReturn:
 		...
 
 
 class BaseDataHolder(ABC):
-	expected_photos: ClassVar[int]
-	expected_identities: ClassVar[int]
+	_expected_num_images: ClassVar[int]
+	_expected_num_classes: ClassVar[int]
+	_expected_num_pairs: ClassVar[Optional[int]] = None
 
-	def __init__(self, reader: BaseReader, check_properties: bool = True) -> NoReturn:
-		self._reader = reader
+	def __init__(self, path: str, reader: str = "FolderReader", check_properties: bool = True) -> NoReturn:
+		valid_readers: List[str] = list(READERS_REGISTRY.register.keys())
+		assert reader in valid_readers, f"Available writers are: {valid_readers}"
+		self._reader = READERS_REGISTRY.get(reader)(path)
+		self._reader.check_structure()
 		if check_properties:
 			self._check_properties()
-
-	@property
-	def reader(self) -> BaseReader:
-		return self._reader
 
 	@property
 	def pairs(self) -> Optional[List[VerificationRecord]]:
 		return self._reader.pairs
 
+	@property
+	def num_images(self) -> int:
+		return self._reader.num_images
+
+	@property
+	def num_classes(self) -> int:
+		return self._reader.num_classes
+
+	def get_records_by_label(self, label: int) -> List[ClassificationRecord]:
+		attributes = self._reader.attributes
+		indices = [index for index in range(len(attributes)) if attributes[index][0] == label]
+		return list(map(lambda x: self.__getitem__(x), indices))
+
 	def __len__(self) -> int:
-		return self._reader.photos
+		return self.num_images
 
 	def __getitem__(self, index: int) -> ClassificationRecord:
 		return self._reader.get(index)
 
 	def _check_properties(self) -> NoReturn:
-		assert self._reader.photos == self.expected_photos, "The number of photos does not meet the expected"
-		assert self._reader.identities == self.expected_identities, "The number of identities does not meet the expected"
+		assert self.num_images == self._expected_num_images, "The number of images doesn't meet the expected"
+		assert self.num_classes == self._expected_num_classes, "The number of classes does not meet the expected"
+		if self.pairs is not None:
+			assert len(self.pairs) == self._expected_num_pairs, "The number of pairs does not meet the expected"

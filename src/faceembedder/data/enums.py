@@ -7,6 +7,6 @@ class Phase(Enum):
 	TEST = 3
 
 
-class Format(Enum):
+class DataFormat(Enum):
 	FOLDER = 1
 	BCOLZ = 2

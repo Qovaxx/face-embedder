@@ -1,4 +1,4 @@
-git+https://github.com/amirassov/ppln.git@v0.3.0#egg=ppln
+git+https://github.com/amirassov/ppln.git@2725a58536a8d09f5b78da915ba9f0b54a0d8b31#egg=ppln
 bcolz
 torch
 torchvision
@@ -8,3 +8,4 @@ click
 numpy
 opencv-contrib-python
 jpeg4py
+scikit-learn

@@ -3,6 +3,7 @@ version: '2.4'
 services:
   faceembedder:
     volumes:
-      - ${DL4_RAW_DIRPATH}:/datasets/raw
-      - ${DL4_INTERIM_DIRPATH}:/datasets/interim
-      - ${DL4_PROCESSED_DIRPATH}:/datasets/processed
+      - ${DL4_RAW_DIRPATH}:${CONTAINER_RAW_DIRPATH}
+      - ${DL4_INTERIM_DIRPATH}:${CONTAINER_INTERIM_DIRPATH}
+      - ${DL4_PROCESSED_DIRPATH}:${CONTAINER_PROCESSED_DIRPATH}
+      - ${DL4_DUMPS}:${CONTAINER_DUMPS_DIRPATH}

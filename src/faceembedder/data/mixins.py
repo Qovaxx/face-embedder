@@ -1,18 +1,17 @@
-import os
 import warnings
 import os.path as osp
 
 from typing_extensions import ClassVar
 
-from .enums import Format
+from .enums import DataFormat
 
 
 class FolderMixin(object):
-	format: ClassVar[Format] = Format.FOLDER
+	format: ClassVar[DataFormat] = DataFormat.FOLDER
 
 
 class BcolzMixin(object):
-	format: ClassVar[Format] = Format.BCOLZ
+	format: ClassVar[DataFormat] = DataFormat.BCOLZ
 
 
 class PathMixin(object):

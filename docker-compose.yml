@@ -11,6 +11,7 @@ services:
         - DOCKER_SSH_PORT=${DOCKER_SSH_PORT}
         - PROJECT_DIRPATH=${CONTAINER_PROJECT_DIRPATH}
     runtime: nvidia
+    ipc: host
     shm_size: 16gb
     restart: unless-stopped
     tty: true

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Script for working with the main docker-compose commands.
+# When building an image, git attributes are written to environment variables
 
 # Example usage:
 #  base:

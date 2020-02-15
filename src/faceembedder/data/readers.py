@@ -5,6 +5,7 @@ import bcolz
 from jpeg4py import JPEG
 from typing_extensions import final
 
+from .enums import Phase
 from .base import BaseReader
 from .meta import RegistryMeta
 from .registry import READERS_REGISTRY
@@ -24,22 +25,24 @@ class FolderReader(BaseReader, FolderMixin, metaclass=RegistryMeta, registry=REA
 
 	def get(self, index: int) -> ClassificationRecord:
 		record = self._attributes[index]
-		image_path = osp.join(self.data_path, record[3])
+		image_path = osp.join(self.data_path, record[4])
 		image = JPEG(image_path).decode()
+		phase = Phase(record[3]) if record[3] is not None else None
 		return ClassificationRecord(
 			image=image,
 			label=record[0],
-			fold=record[1],
-			phase=record[2],
-			additional=record[4]
+			name=record[1],
+			fold=record[2],
+			phase=phase,
+			additional=record[5]
 		)
 
 	@property
-	def photos(self) -> int:
+	def num_images(self) -> int:
 		return len(self._attributes)
 
 	@property
-	def identities(self) -> int:
+	def num_classes(self) -> int:
 		return len(set(map(lambda x: x[0], self._attributes)))
 
 
@@ -54,18 +57,20 @@ class BcolzReader(BaseReader, BcolzMixin, metaclass=RegistryMeta, registry=READE
 	def get(self, index: int) -> ClassificationRecord:
 		record = self._attributes[index]
 		image = self._data[index]
+		phase = Phase(record[3]) if record[3] is not None else None
 		return ClassificationRecord(
 			image=image,
 			label=record[0],
-			fold=record[1],
-			phase=record[2],
-			additional=record[3]
+			name=record[1],
+			fold=record[2],
+			phase=phase,
+			additional=record[4]
 		)
 
 	@property
-	def photos(self) -> int:
+	def num_images(self) -> int:
 		return len(self._attributes)
 
 	@property
-	def identities(self) -> int:
+	def num_classes(self) -> int:
 		return len(set(map(lambda x: x[0], self._attributes)))

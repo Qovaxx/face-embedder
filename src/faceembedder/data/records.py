@@ -17,6 +17,7 @@ from .enums import Phase
 class ClassificationRecord(object):
 	image: np.ndarray
 	label: int
+	name: Optional[str] = field(default=None)
 	fold: Optional[int] = field(default=None)
 	phase: Optional[Phase] = field(default=None)
 	additional: Dict[str, Any] = field(default_factory=dict)

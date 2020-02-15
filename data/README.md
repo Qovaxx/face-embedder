@@ -14,17 +14,35 @@ project, so some of the original file may not be available.
 
 ## Train Datasets
 
+* #### MS1MV2
+    This dataset is also known as MS1M-Arcface and it is one of the cleanup versions of the original dataset
+    MS1M (MS-Celeb-1M).
+    * **[MS1MV2-InsightFace](https://github.com/deepinsight/insightface/wiki/Dataset-Zoo)
+        (85.742 ids, 5.822.653 images)**
+        
+        Desc WIP
+         * Folder structure:
+            ```
+                raw/
+                ├── MS1MV2-InsightFace/
+                │   ├── train.idx
+                │   ├── train.rec
+                └── ...
+            ```
+         * Download links:
+            * [train.idx](https://www.dropbox.com/s/wpx6tqjf0y5mf6r/faces_ms1m-refine-v2_112x112.zip?dl=0)
+            * [train.rec](https://www.dropbox.com/s/wpx6tqjf0y5mf6r/faces_ms1m-refine-v2_112x112.zip?dl=0)
+        
+
 * #### VGGFace2
     The dataset has an intersection of [53](http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/class_overlap_vgg1_2.txt)
     ids with the previous version VGGFace
     * **[VGGFace2-Origin](http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/)
         (9131 ids, 3.311.286 images)**
         
-        Dataset from the `original site` (preliminary application required). The data is splitted into train and test
-        and 
-        Лэндмарки и ббоксы для все изображений
-        мета атрибуты для 30к, причем не все пересекается
-        https://github.com/deepinsight/insightface/issues/488
+        Dataset from the `original site` (preliminary application required). For each image, there are gender,
+        facial landmarks, and bbox coordinates. For 30k ids, the following attributes are available: the presence of
+        a mustache and beard, hat, glasses (the intersection is less than 30k). The data is splitted into train and test.
          * Folder structure:
             ```
                 raw/
@@ -47,6 +65,7 @@ project, so some of the original file may not be available.
                 │   ├── 08-Wearing_Hat.txt
                 │   ├── 09-Eyeglasses.txt
                 │   ├── 10-Sunglasses.txt
+                │   ├── identity_meta.csv
                 │   ├── test_list.txt
                 │   ├── train_list.txt
                 └── ...
@@ -59,6 +78,7 @@ project, so some of the original file may not be available.
             * [08-Wearing_Hat.txt](https://raw.githubusercontent.com/ox-vgg/vgg_face2/master/attributes/08-Wearing_Hat.txt)
             * [09-Eyeglasses.txt](https://raw.githubusercontent.com/ox-vgg/vgg_face2/master/attributes/09-Eyeglasses.txt)
             * [10-Sunglasses.txt](https://raw.githubusercontent.com/ox-vgg/vgg_face2/master/attributes/10-Sunglasses.txt)
+            * [identity_meta.csv](http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/identity_meta.csv) - correct the comma in line 652
             * [test_list.txt](http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/test_list.txt)
             * [train_list.txt](http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/train_list.txt)
 
