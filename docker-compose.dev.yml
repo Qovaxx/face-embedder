@@ -1,0 +1,16 @@
+version: '2.4'
+
+services:
+  faceembedder:
+    build:
+      target: development
+    image: ${IMAGE_NAME}-dev
+    container_name: ${CONTAINER_NAME}-dev
+    environment:
+      - APP_ENV=development
+      - DISPLAY=unix${DISPLAY}
+    ports:
+      - ${HOST_SSH_PORT}:${DOCKER_SSH_PORT}
+    volumes:
+      - ${PWD}:${CONTAINER_PROJECT_DIRPATH}
+      - /tmp/.X11-unix:/tmp/.X11-unix --privileged

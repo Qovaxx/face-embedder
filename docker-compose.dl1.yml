@@ -1,0 +1,9 @@
+version: '2.4'
+
+services:
+  faceembedder:
+    volumes:
+      - ${DL1_RAW_DIRPATH}:${CONTAINER_RAW_DIRPATH}
+      - ${DL1_INTERIM_DIRPATH}:${CONTAINER_INTERIM_DIRPATH}
+      - ${DL1_PROCESSED_DIRPATH}:${CONTAINER_PROCESSED_DIRPATH}
+      - ${DL1_DUMPS}:${CONTAINER_DUMPS_DIRPATH}
