@@ -11,12 +11,10 @@ from tqdm import tqdm
 import numpy as np
 from typing_extensions import final
 
+from .name import DATASET_NAME
 from .labels import NameMap
 from ..utils import read_file
-from ...base import (
-	BaseConverter,
-	BaseWriter
-)
+from ...base import BaseConverter
 from ...meta import RegistryMeta
 from ...records import (
 	ClassificationRecord,
@@ -30,44 +28,47 @@ from ...utils import (
 
 
 @final
-class OriginConverter(BaseConverter, metaclass=RegistryMeta, registry=CONVERTERS_REGISTRY):
-	formats: ClassVar[List[str]] = ["original", "funneled", "deepfunneled"]
+class LFWOriginConverter(BaseConverter, metaclass=RegistryMeta, registry=CONVERTERS_REGISTRY):
+	__dataset__ = DATASET_NAME
+	__source__ = "Origin"
+	valid_types: ClassVar[List[str]] = ["original", "funneled", "deepfunneled"]
 
-	def __init__(self, writer: BaseWriter,
-	             format: str = "original",
-	             verbose: bool = False) -> NoReturn:
-		assert format in self.formats
-		super().__init__(writer, verbose)
-		self._format = format
+	def __init__(self, src_path, dst_path: str, writer: str = "FolderWriter",
+	              verbose: bool = False, type: str = "original") -> NoReturn:
+		super().__init__(src_path, dst_path, writer, verbose)
+		assert type in self.valid_types
+		self._type = type
 		self._name_map = NameMap()
 		self._image_paths: Optional[List[Path]] = None
+		self._filepath_template = "*/*"
 
-	def execute_from(self, path: str, filepath_template: str = "*/*") -> NoReturn:
-		if self._format == "original":
-			data_path = Path(path) / "lfw"
+	def execute(self) -> NoReturn:
+		if self._type == "original":
+			data_path = Path(self._src_path) / "lfw"
 		else:
-			data_path = Path(path) / f"lfw-{self._format}"
+			data_path = Path(self._src_path) / f"lfw-{self._type}"
 
-		self._image_paths = [x for x in sorted(data_path.rglob(filepath_template)) if x.is_file()]
-		self._process_general_data()
-		self._process_pairs(path)
+		self._image_paths = [x for x in sorted(data_path.rglob(self._filepath_template)) if x.is_file()]
+		self._process_samples()
+		self._process_pairs()
 		self._writer.flush()
 
-	def _process_general_data(self) -> NoReturn:
+	def _process_samples(self) -> NoReturn:
 		iter = self._image_paths
 		if self._verbose:
 			iter = tqdm(iter, total=len(iter), desc="Converted: ")
 
 		for image_path in iter:
 			image = load_image(str(image_path))
-			label = self._name_map.to_label(self._get_person_name(image_path))
-			record = ClassificationRecord(image, label)
+			name = self._get_person_name(image_path)
+			label = self._name_map.to_label(name)
+			record = ClassificationRecord(image, label, name)
 			self._writer.put(record)
 
-	def _process_pairs(self, path) -> NoReturn:
+	def _process_pairs(self) -> NoReturn:
 		to_key_fn = lambda x: f"{self._get_person_name(x)}-{self._get_person_image_index(x)}"
 		key_map = {to_key_fn(path):index for index, path in enumerate(self._image_paths)}
-		pairs_data = read_file(str(Path(path) / "pairs.txt"))
+		pairs_data = read_file(str(Path(self._src_path) / "pairs.txt"))
 
 		for line in pairs_data[1:]:
 			if len(line) == 3:
@@ -92,15 +93,18 @@ class OriginConverter(BaseConverter, metaclass=RegistryMeta, registry=CONVERTERS
 
 
 @final
-class InsightFaceConverter(BaseConverter, metaclass=RegistryMeta, registry=CONVERTERS_REGISTRY):
+class LFWInsightFaceConverter(BaseConverter, metaclass=RegistryMeta, registry=CONVERTERS_REGISTRY):
+	__dataset__ = DATASET_NAME
+	__source__ = "InsightFace"
 
-	def __init__(self, writer: BaseWriter, verbose: bool = False) -> NoReturn:
-		super().__init__(writer, verbose)
+	def __init__(self, src_path, dst_path: str, writer: str = "FolderWriter",
+	             verbose: bool = False) -> NoReturn:
+		super().__init__(src_path, dst_path, writer, verbose)
 		self._name_map = NameMap()
 
-	def execute_from(self, path: str) -> NoReturn:
-		pairs_data = read_file(str(Path(path) / "pairs.txt"))[1:]
-		with open(str(Path(path) / "lfw.bin"), "rb") as file_stream:
+	def execute(self) -> NoReturn:
+		pairs_data = read_file(str(Path(self._src_path) / "pairs.txt"))[1:]
+		with open(str(Path(self._src_path) / "lfw.bin"), "rb") as file_stream:
 			byte_images, pair_labels = pickle.load(file_stream, encoding="bytes")
 		assert len(byte_images) == len(pair_labels) * 2 == len(pairs_data) * 2
 
@@ -114,7 +118,8 @@ class InsightFaceConverter(BaseConverter, metaclass=RegistryMeta, registry=CONVE
 			names = [data[0], data[0]] if len(data) == 3 else [data[0], data[2]]
 			for byte_image, name in zip(images, names):
 				image = extract_image(byte_image)
-				record = ClassificationRecord(image, label=self._name_map.to_label(name))
+				label = self._name_map.to_label(name)
+				record = ClassificationRecord(image, label, name)
 				self._writer.put(record)
 
 			record = VerificationRecord(idx_1=image_index, idx_2=image_index+1, label=int(pair_label))

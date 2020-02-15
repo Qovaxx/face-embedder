@@ -34,7 +34,9 @@ class FolderWriter(BaseWriter, FolderMixin, metaclass=RegistryMeta, registry=WRI
 		cv2.imwrite(str(image_path), rgb_image)
 
 		image_relative_path = str(image_path.relative_to(image_path.parent.parent))
-		self._attributes.append((record.label, record.fold, record.phase, image_relative_path, record.additional))
+		phase = record.phase.value if record.phase is not None else None
+		self._attributes.append((
+			record.label, record.name, record.fold, phase, image_relative_path, record.additional))
 
 	def flush(self) -> NoReturn:
 		images_count = len(list(Path(self.data_path).rglob("*/*")))
@@ -61,7 +63,8 @@ class BcolzWriter(BaseWriter, BcolzMixin, metaclass=RegistryMeta, registry=WRITE
 			self._data = bcolz.carray(image, rootdir=self.data_path, cparams=self._cparams, mode="w")
 		else:
 			self._data.append(image)
-		self._attributes.append((record.label, record.fold, record.phase, record.additional))
+		phase = record.phase.value if record.phase is not None else None
+		self._attributes.append((record.label, record.name, record.fold, phase, record.additional))
 
 	def flush(self) -> NoReturn:
 		assert self._data.shape[0] == len(self._attributes), "Dimensions of data and attributes did not match"

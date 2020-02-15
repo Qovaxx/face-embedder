@@ -1,9 +1,11 @@
+from typing import List
+
 import torch
 from torch import nn
 from torchvision.models.utils import load_state_dict_from_url
 
 
-__all__ = ["iresnet34", "iresnet50", "iresnet100"]
+__all__ = ["iresnet34", "iresnet50", "iresnet100", "IResNet"]
 
 model_urls = {
     "iresnet34": "https://sota.nizhib.ai/insightface/iresnet34-5b0d0e90.pth",
@@ -77,10 +79,10 @@ class IResNet(nn.Module):
         if len(replace_stride_with_dilation) != 3:
             raise ValueError("replace_stride_with_dilation should be None "
                              "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
+        self.num_features = num_features
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1,
-                               bias=False)
+        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(self.inplanes, eps=2e-05, momentum=0.9)
         self.prelu = nn.PReLU(self.inplanes)
         self.layer1 = self._make_layer(block, 64, layers[0], stride=2)
@@ -132,7 +134,7 @@ class IResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        x = self.conv1(x) # 1, 64, 112, 112
+        x = self.conv1(x) # 1, 64, 112, 112 # TODO: remove comments
         x = self.bn1(x)   # 1, 64, 112, 112
         x = self.prelu(x) # 1, 64, 112, 112
 
@@ -150,7 +152,8 @@ class IResNet(nn.Module):
         return x
 
 
-def _iresnet(arch, block, layers, pretrained, progress, **kwargs):
+def _iresnet(arch: str, block: nn.Module, layers: List[int],
+             pretrained: bool, progress: bool, **kwargs) -> IResNet:
     model = IResNet(block, layers, **kwargs)
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls[arch], progress=progress)
@@ -158,13 +161,13 @@ def _iresnet(arch, block, layers, pretrained, progress, **kwargs):
     return model
 
 
-def iresnet34(pretrained=False, progress=True, **kwargs):
+def iresnet34(pretrained: bool = False, progress: bool = True, **kwargs) -> IResNet:
     return _iresnet("iresnet34", IBasicBlock, [3, 4, 6, 3], pretrained, progress, **kwargs)
 
 
-def iresnet50(pretrained=False, progress=True, **kwargs):
+def iresnet50(pretrained: bool = False, progress: bool = True, **kwargs) -> IResNet:
     return _iresnet("iresnet50", IBasicBlock, [3, 4, 14, 3], pretrained, progress, **kwargs)
 
 
-def iresnet100(pretrained=False, progress=True, **kwargs):
+def iresnet100(pretrained: bool = False, progress: bool = True, **kwargs) -> IResNet:
     return _iresnet("iresnet100", IBasicBlock, [3, 13, 30, 3], pretrained, progress, **kwargs)

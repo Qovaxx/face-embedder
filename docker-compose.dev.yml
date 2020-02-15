@@ -6,7 +6,6 @@ services:
       target: development
     image: ${IMAGE_NAME}-dev
     container_name: ${CONTAINER_NAME}-dev
-    ipc: host
     environment:
       - APP_ENV=development
       - DISPLAY=unix${DISPLAY}
